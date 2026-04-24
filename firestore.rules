@@ -1,0 +1,119 @@
+/**
+ * IronZen Security Rules Philosophy
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model designed for personal habit tracking.
+ * Access is governed by the user's authenticated UID, ensuring that every user has a 
+ * private silo for their profile, habits, and progress logs.
+ *
+ * Data Structure:
+ * The data is organized hierarchically: /users/{userId} -> habits -> habitLogs.
+ * This structure reflects the natural ownership of data within the application.
+ *
+ * Key Security Decisions:
+ * 1. Private-Only Access: By default, no data in this application is public. 
+ *    All reads and writes require authentication.
+ * 2. Authorization Independence: To ensure rules remain fast and cost-effective,
+ *    relational fields (like userId) are denormalized (copied) into sub-documents.
+ *    This allows the rules to verify ownership without performing expensive cross-document 
+ *    lookups (get() calls).
+ * 3. Strict Relational Integrity: On document creation, the rules enforce that the
+ *    internal 'userId' field matches the path and the authenticated user's ID. 
+ *    On update, these ownership links are made immutable.
+ *
+ * Denormalization for Authorization:
+ * - Habits contain a 'userId' field to verify ownership instantly.
+ * - HabitLogs contain a 'userId' field (denormalized from the parent Habit) to allow
+ *   direct ownership verification at the deepest level of the hierarchy.
+ */
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper Functions ---
+
+    /**
+     * @description Checks if the request is from an authenticated user.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the user's UID matches the provided ID.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user owns the document and the document actually exists.
+     * Used for state-changing operations (update, delete).
+     */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    /**
+     * @description Validates that the internal ownership field matches the path and auth UID.
+     */
+    function isValidOwnerLink(userId) {
+      return request.resource.data.userId == userId && request.resource.data.userId == request.auth.uid;
+    }
+
+    /**
+     * @description Ensures the ownership link cannot be changed after creation.
+     */
+    function isOwnerLinkImmutable() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description Rules for the UserProfile collection.
+     * @path /users/{userId}
+     * @allow (get) If the authenticated user's UID matches {userId}.
+     * @deny (list) If the user is not authenticated or attempts to list others.
+     * @principle Restricts access to a user's own data tree and validates path consistency.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && (request.resource.data.id == userId);
+      allow update: if isExistingOwner(userId) && (request.resource.data.id == resource.data.id);
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Rules for the Habit subcollection.
+       * @path /users/{userId}/habits/{habitId}
+       * @allow (create) If user owns the path and sets the internal userId correctly.
+       * @deny (update) If user attempts to change the internal userId to another user.
+       * @principle Enforces document ownership for writes and ensures relational integrity.
+       */
+      match /habits/{habitId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidOwnerLink(userId);
+        allow update: if isExistingOwner(userId) && isOwnerLinkImmutable();
+        allow delete: if isExistingOwner(userId);
+
+        /**
+         * @description Rules for the HabitLog subcollection.
+         * @path /users/{userId}/habits/{habitId}/habitLogs/{habitLogId}
+         * @allow (create) If user owns the path and provides the denormalized userId.
+         * @deny (delete) If the document does not exist or user is not the owner.
+         * @principle Uses denormalized data for efficient, path-independent authorization.
+         */
+        match /habitLogs/{habitLogId} {
+          allow get: if isOwner(userId);
+          allow list: if isOwner(userId);
+          allow create: if isOwner(userId) && isValidOwnerLink(userId);
+          allow update: if isExistingOwner(userId) && isOwnerLinkImmutable();
+          allow delete: if isExistingOwner(userId);
+        }
+      }
+    }
+  }
+}

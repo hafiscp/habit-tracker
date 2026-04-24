@@ -1,0 +1,274 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user's profile and global preferences within the IronZen application. This entity stores data linked to an external authentication system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity. This typically corresponds to the user ID from the authentication system."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address, often retrieved from the authentication provider.",
+          "format": "email"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name or full name."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL to the user's profile picture.",
+          "format": "uri"
+        },
+        "themeDefault": {
+          "type": "string",
+          "description": "The user's preferred default theme setting (e.g., 'dark', 'light' or a specific theme ID)."
+        },
+        "telegramWebhookUrl": {
+          "type": "string",
+          "description": "The webhook URL configured by the user to receive Telegram notifications.",
+          "format": "uri"
+        },
+        "notificationTime": {
+          "type": "string",
+          "description": "The default time of day for global habit notifications.",
+          "format": "time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user profile was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user profile was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "displayName",
+        "telegramWebhookUrl",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Habit": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Habit",
+      "type": "object",
+      "description": "Represents an individual habit that a user wants to track, including its customization and tracking settings.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Habit entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile that owns this habit. (Relationship: UserProfile 1:N Habit)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The name or short title of the habit (e.g., 'Morning Run', 'Meditation')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description or specific goals for the habit (e.g., '5.0 km • Zone 2', '20 Mins • Vipassana')."
+        },
+        "habitType": {
+          "type": "string",
+          "description": "Defines the type of data to be tracked for this habit. 'boolean' for simple yes/no completion, 'number' for count or quantity, 'duration' for time-based tracking, 'photo' for visual confirmation.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "targetValue": {
+          "type": "number",
+          "description": "The target value for habits tracked by number or duration (e.g., '5' for 5km, '20' for 20 minutes)."
+        },
+        "unitOfMeasure": {
+          "type": "string",
+          "description": "The unit of measurement for habits with 'number' or 'duration' type (e.g., 'km', 'minutes', 'hours', 'pages')."
+        },
+        "icon": {
+          "type": "string",
+          "description": "The name of the Material Symbol icon representing the habit (e.g., 'directions_run', 'self_improvement')."
+        },
+        "emoji": {
+          "type": "string",
+          "description": "An emoji representing the habit, offering additional visual flair."
+        },
+        "themeColorHex": {
+          "type": "string",
+          "description": "The hexadecimal color code used for theming this specific habit's card and progress visuals."
+        },
+        "minDailyValue": {
+          "type": "number",
+          "description": "The minimum acceptable value for a daily log entry for habits of type 'number' or 'duration'."
+        },
+        "maxDailyValue": {
+          "type": "number",
+          "description": "The maximum acceptable value for a daily log entry for habits of type 'number' or 'duration'."
+        },
+        "reminderTime": {
+          "type": "string",
+          "description": "A specific time of day for this habit's notification, overriding the user's default notification time.",
+          "format": "time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the habit was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the habit was last updated.",
+          "format": "date-time"
+        },
+        "archived": {
+          "type": "boolean",
+          "description": "A flag indicating if the habit is archived (inactive) rather than deleted."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "habitType",
+        "icon",
+        "themeColorHex",
+        "createdAt",
+        "updatedAt",
+        "archived"
+      ]
+    },
+    "HabitLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "HabitLog",
+      "type": "object",
+      "description": "Records individual daily entries for a habit, tracking user progress over time.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the HabitLog entry."
+        },
+        "habitId": {
+          "type": "string",
+          "description": "Reference to the Habit this log entry belongs to. (Relationship: Habit 1:N HabitLog)"
+        },
+        "logDate": {
+          "type": "string",
+          "description": "The specific date for which this habit entry was recorded.",
+          "format": "date"
+        },
+        "value": {
+          "type": "string",
+          "description": "The logged value for the habit on this date. Its interpretation depends on the parent Habit's 'habitType' (e.g., 'true' for boolean, '5' for a number, '20' for a duration). If habitType is 'photo', this could be 'true'/'false' for completion, with the image URL in 'imageUrl'."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes or remarks for this specific habit log entry."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL to a picture, relevant if the parent habit's 'habitType' is 'photo'.",
+          "format": "uri"
+        },
+        "loggedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the habit log entry was actually recorded in the system.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the habit log entry was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "habitId",
+        "logDate",
+        "value",
+        "loggedAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores individual user profiles. Access is strictly controlled by the 'userId' matching the authenticated user's UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user, corresponding to Firebase Authentication UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/habits/{habitId}",
+        "definition": {
+          "entityName": "Habit",
+          "schema": {
+            "$ref": "#/backend/entities/Habit"
+          },
+          "description": "A subcollection for habits owned by a specific user. Includes a denormalized 'userId' field within the document for authorization independence, ensuring simple security rules for ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the owning user."
+            },
+            {
+              "name": "habitId",
+              "description": "The unique identifier for the habit."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/habits/{habitId}/habitLogs/{habitLogId}",
+        "definition": {
+          "entityName": "HabitLog",
+          "schema": {
+            "$ref": "#/backend/entities/HabitLog"
+          },
+          "description": "A subcollection for daily log entries belonging to a specific habit. For robust authorization independence, each document MUST include a denormalized 'userId' field in addition to 'habitId', allowing rules to verify user ownership directly without 'get()' operations.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the owning user (denormalized)."
+            },
+            {
+              "name": "habitId",
+              "description": "The unique identifier for the parent habit."
+            },
+            {
+              "name": "habitLogId",
+              "description": "The unique identifier for the habit log entry (e.g., date-based ID)."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore structure for IronZen prioritizes secure, scalable, and debuggable authorization by strictly adhering to the core design principles, especially Authorization Independence and Structural Segregation.\n\n1.  **User Profiles (`/users/{userId}`)**: User profile data is stored directly under the `/users` top-level collection, with each document ID (`userId`) matching the Firebase Authentication UID. This follows the 'Private Data' access model, ensuring direct path-based authorization (`request.auth.uid == userId`) and making rules clear and simple. All documents in this collection share the same security posture (owned by the user).\n\n2.  **Habits (`/users/{userId}/habits/{habitId}`)**: Each habit is stored as a subcollection under its owning user's profile. This implements the 'Hierarchical Paths for User-Owned Data' pattern. The `Habit` document explicitly contains a `userId` field, which matches the `{userId}` wildcard in the path. This redundancy, though seemingly minor, is crucial for Authorization Independence. It allows security rules to verify ownership by checking `resource.data.userId == request.auth.uid` directly on the `Habit` document, eliminating the need for `get()` calls to the parent `UserProfile` document. This also supports Query-Able Paths (QAPs), as `list` operations on `/users/{userId}/habits` are inherently scoped to the authenticated user.\n\n3.  **Habit Logs (`/users/{userId}/habits/{habitId}/habitLogs/{habitLogId}`)**: Daily habit entries are nested further as a subcollection under their respective `Habit` documents. This continues the 'Nested 1:N' hierarchical path structure. For **CRITICAL Authorization Independence**, each `HabitLog` document **MUST** contain a denormalized `userId` field (matching the owning user's ID) in addition to its `habitId`. While the provided `HabitLog` schema does not explicitly list `userId`, its inclusion is fundamental for creating robust and efficient security rules. Without this denormalization, rules for `HabitLog` would be forced to perform a `get()` operation on the parent `Habit` document to verify ownership, directly violating the Authorization Independence mandate, which impacts performance, cost, and debuggability, and prevents atomic operations involving both parent and child.\n\n**QAPs (Query-Able Paths) Support**:\n*   Listing a user's `UserProfile` is direct and secure via the `/users/{userId}` path.\n*   Listing all `Habit` documents for a specific user is secure via `/users/{userId}/habits`. The `userId` in the path ensures that only the authenticated user can retrieve their habits.\n*   Listing `HabitLog` documents for a specific habit of a specific user is secure via `/users/{userId}/habits/{habitId}/habitLogs`. The hierarchical path provides the necessary filtering. For collection group queries across all `habitLogs` (e.g., to build a unified dashboard view or heat map for a user), the denormalized `userId` field in the `HabitLog` document is essential. Rules could then check `allow list: if request.auth.uid == resource.data.userId;` ensuring security without path restrictions.\n\nThis structure ensures clear ownership, simplified security rules, and efficient data retrieval, adhering to all mandated design principles."
+  }
+}

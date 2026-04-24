@@ -19,14 +19,16 @@ import {
   Search,
   Zap,
   Flame,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useUser, useFirestore, useCollection, useMemoFirebase, initiateAnonymousSignIn, setDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useAuth, useCollection, useMemoFirebase, initiateAnonymousSignIn, setDocumentNonBlocking } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 
 export default function IronZenDashboard() {
-  const { user, isUserLoading, auth } = useUser();
+  const { user, isUserLoading, userError } = useUser();
+  const auth = useAuth();
   const firestore = useFirestore();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
@@ -48,7 +50,7 @@ export default function IronZenDashboard() {
         id: user.uid,
         email: user.email || `${user.uid}@anonymous.io`,
         displayName: user.displayName || 'Agent ' + user.uid.substring(0, 4),
-        telegramWebhookUrl: '', // To be set by user
+        telegramWebhookUrl: '', 
         createdAt: now,
         updatedAt: now,
       }, { merge: true });
@@ -60,7 +62,7 @@ export default function IronZenDashboard() {
     return collection(firestore, 'users', user.uid, 'habits');
   }, [firestore, user]);
 
-  const { data: habits, isLoading: isHabitsLoading } = useCollection<Habit>(habitsQuery);
+  const { data: habits, isLoading: isHabitsLoading, error: habitsError } = useCollection<Habit>(habitsQuery);
 
   const today = new Date().toISOString().split('T')[0];
   
@@ -102,11 +104,25 @@ export default function IronZenDashboard() {
   };
 
   // Wait for user to be fully synced
-  if (isUserLoading || !user || isHabitsLoading) {
+  if (isUserLoading || (!user && !userError) || isHabitsLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-[#0c0e12] flex-col gap-4">
         <Loader2 className="animate-spin text-primary" size={48} />
         <p className="text-primary font-black uppercase tracking-widest text-sm animate-pulse">Syncing Protocols...</p>
+      </div>
+    );
+  }
+
+  // Handle critical errors
+  if (userError || habitsError) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-[#0c0e12] flex-col gap-4 p-8 text-center">
+        <AlertCircle className="text-destructive mb-2" size={48} />
+        <h2 className="text-2xl font-black uppercase italic text-white">System Breach</h2>
+        <p className="text-muted-foreground max-w-md">The execution engine encountered a critical error. Please refresh the terminal.</p>
+        <Button onClick={() => window.location.reload()} variant="outline" className="mt-4 border-white/10 text-white hover:bg-white/5">
+          Restart Subsystems
+        </Button>
       </div>
     );
   }

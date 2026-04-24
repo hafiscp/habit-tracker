@@ -53,6 +53,10 @@ export function CreateHabitForm({ isOpen, onClose }: CreateHabitFormProps) {
       habitType: 'boolean',
       icon: 'Activity',
       themeColorHex: '#14f1d9',
+      targetValue: 0,
+      unitOfMeasure: '',
+      minDailyValue: 0,
+      maxDailyValue: 0,
     },
   });
 

@@ -1,7 +1,8 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Habit, HabitLog } from '@/lib/types';
+import { Habit } from '@/lib/types';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { ProgressRing } from '@/components/dashboard/progress-ring';
 import { HabitCard } from '@/components/dashboard/habit-card';
@@ -38,6 +39,22 @@ export default function IronZenDashboard() {
     }
   }, [user, isUserLoading, auth]);
 
+  // Ensure UserProfile exists
+  useEffect(() => {
+    if (user && firestore) {
+      const userRef = doc(firestore, 'users', user.uid);
+      const now = new Date().toISOString();
+      setDocumentNonBlocking(userRef, {
+        id: user.uid,
+        email: user.email || `${user.uid}@anonymous.io`,
+        displayName: user.displayName || 'Agent ' + user.uid.substring(0, 4),
+        telegramWebhookUrl: '', // To be set by user
+        createdAt: now,
+        updatedAt: now,
+      }, { merge: true });
+    }
+  }, [user, firestore]);
+
   const habitsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return collection(firestore, 'users', user.uid, 'habits');
@@ -47,10 +64,7 @@ export default function IronZenDashboard() {
 
   const today = new Date().toISOString().split('T')[0];
   
-  // Real progress calculation would need to fetch today's logs
-  // For simplicity in MVP, we look at the habits count. 
-  // A production version would use a dedicated useCollection for today's logs.
-  const overallProgress = habits && habits.length > 0 ? 0 : 0; 
+  const overallProgress = 0; 
 
   const handleToggleHabit = (habitId: string) => {
     if (!user || !firestore) return;
@@ -87,7 +101,8 @@ export default function IronZenDashboard() {
     }, { merge: true });
   };
 
-  if (isUserLoading || isHabitsLoading) {
+  // Wait for user to be fully synced
+  if (isUserLoading || !user || isHabitsLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-[#0c0e12] flex-col gap-4">
         <Loader2 className="animate-spin text-primary" size={48} />
@@ -99,7 +114,6 @@ export default function IronZenDashboard() {
   return (
     <SidebarProvider defaultOpen>
       <div className="flex h-screen w-full bg-[#0c0e12] overflow-hidden">
-        {/* Sidebar */}
         <Sidebar className="border-r border-white/5 bg-[#0F1115]/80 backdrop-blur-2xl">
           <SidebarHeader className="p-8">
             <div className="flex items-center gap-4 mb-8">
@@ -144,13 +158,10 @@ export default function IronZenDashboard() {
           </SidebarContent>
         </Sidebar>
 
-        {/* Main Content */}
         <main className="flex-1 overflow-y-auto relative p-8 md:p-12">
-          {/* Ambient Background Glows */}
           <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none -z-10" />
           <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-secondary/5 rounded-full blur-[120px] pointer-events-none -z-10" />
 
-          {/* Header */}
           <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
             <div>
               <h2 className="text-5xl font-black italic tracking-tighter text-foreground uppercase">Today's Protocol</h2>
@@ -174,7 +185,6 @@ export default function IronZenDashboard() {
             </div>
           </header>
 
-          {/* Progress Overview */}
           <section className="mb-12">
             <div className="glass-card p-10 rounded-[2.5rem] flex flex-col lg:flex-row items-center gap-12 shadow-2xl relative overflow-hidden group">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-primary opacity-50" />
@@ -219,7 +229,6 @@ export default function IronZenDashboard() {
             </div>
           </section>
 
-          {/* Habits Grid */}
           <section>
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-2xl font-black italic uppercase tracking-tighter">Active Protocols</h3>
@@ -254,10 +263,8 @@ export default function IronZenDashboard() {
             </div>
           </section>
 
-          {/* Create Habit Modal */}
           <CreateHabitForm isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
 
-          {/* Habit Details Modal */}
           <HabitDetails 
             habit={selectedHabit} 
             isOpen={isDetailsOpen} 

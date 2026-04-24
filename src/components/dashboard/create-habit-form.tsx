@@ -1,27 +1,27 @@
+
 "use client";
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { HabitType } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useFirestore, useUser, setDocumentNonBlocking } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
 import { Zap, Activity, Wind, Book, Coffee, Dumbbell, Target } from 'lucide-react';
 
 const habitFormSchema = z.object({
   title: z.string().min(2, "Title is too short"),
   description: z.string().min(5, "Provide a bit more detail"),
   habitType: z.enum(['boolean', 'number', 'duration', 'photo']),
-  targetValue: z.coerce.number().optional(),
-  unitOfMeasure: z.string().optional(),
-  minDailyValue: z.coerce.number().optional(),
-  maxDailyValue: z.coerce.number().optional(),
+  targetValue: z.preprocess((val) => (val === "" ? undefined : Number(val)), z.number().optional()),
+  unitOfMeasure: z.string().default(''),
+  minDailyValue: z.preprocess((val) => (val === "" ? undefined : Number(val)), z.number().optional()),
+  maxDailyValue: z.preprocess((val) => (val === "" ? undefined : Number(val)), z.number().optional()),
   icon: z.string().default('Activity'),
   themeColorHex: z.string().default('#14f1d9'),
 });
@@ -56,7 +56,7 @@ export function CreateHabitForm({ isOpen, onClose }: CreateHabitFormProps) {
       targetValue: 0,
       unitOfMeasure: '',
       minDailyValue: 0,
-      maxDailyValue: 0,
+      maxDailyValue: 100,
     },
   });
 
@@ -64,15 +64,17 @@ export function CreateHabitForm({ isOpen, onClose }: CreateHabitFormProps) {
     if (!user || !firestore) return;
 
     const habitsRef = collection(firestore, 'users', user.uid, 'habits');
+    const newHabitRef = doc(habitsRef); // Generate ID on client
     const now = new Date().toISOString();
 
-    addDocumentNonBlocking(habitsRef, {
+    setDocumentNonBlocking(newHabitRef, {
       ...values,
+      id: newHabitRef.id,
       userId: user.uid,
       createdAt: now,
       updatedAt: now,
       archived: false,
-    });
+    }, { merge: true });
 
     form.reset();
     onClose();
@@ -97,7 +99,7 @@ export function CreateHabitForm({ isOpen, onClose }: CreateHabitFormProps) {
                 <FormItem>
                   <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-white/60">Protocol Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Morning Blitz" {...field} className="bg-white/5 border-white/10 rounded-xl" />
+                    <Input placeholder="e.g., Morning Blitz" {...field} value={field.value ?? ""} className="bg-white/5 border-white/10 rounded-xl" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -111,7 +113,7 @@ export function CreateHabitForm({ isOpen, onClose }: CreateHabitFormProps) {
                 <FormItem>
                   <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-white/60">Objectives</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., 5km run at Zone 2" {...field} className="bg-white/5 border-white/10 rounded-xl" />
+                    <Input placeholder="e.g., 5km run at Zone 2" {...field} value={field.value ?? ""} className="bg-white/5 border-white/10 rounded-xl" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -181,7 +183,7 @@ export function CreateHabitForm({ isOpen, onClose }: CreateHabitFormProps) {
                     <FormItem>
                       <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-white/60">Min Floor</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} className="bg-white/5 border-white/10 rounded-xl" />
+                        <Input type="number" {...field} value={field.value ?? ""} className="bg-white/5 border-white/10 rounded-xl" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -194,7 +196,7 @@ export function CreateHabitForm({ isOpen, onClose }: CreateHabitFormProps) {
                     <FormItem>
                       <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-white/60">Max Cap</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} className="bg-white/5 border-white/10 rounded-xl" />
+                        <Input type="number" {...field} value={field.value ?? ""} className="bg-white/5 border-white/10 rounded-xl" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -211,8 +213,8 @@ export function CreateHabitForm({ isOpen, onClose }: CreateHabitFormProps) {
                   <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-white/60">Core Color</FormLabel>
                   <FormControl>
                     <div className="flex gap-2">
-                      <Input type="color" {...field} className="w-12 h-10 p-1 bg-transparent border-none" />
-                      <Input {...field} className="flex-1 bg-white/5 border-white/10 rounded-xl font-mono" />
+                      <Input type="color" {...field} value={field.value ?? "#14f1d9"} className="w-12 h-10 p-1 bg-transparent border-none" />
+                      <Input {...field} value={field.value ?? "#14f1d9"} className="flex-1 bg-white/5 border-white/10 rounded-xl font-mono" />
                     </div>
                   </FormControl>
                   <FormMessage />

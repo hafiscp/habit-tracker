@@ -1,23 +1,37 @@
+export type HabitType = 'boolean' | 'number' | 'duration' | 'photo';
+
 export type HabitCategory = 'Health' | 'Focus' | 'Mindset' | 'General';
 
-export type HabitRecord = {
-  date: string; // YYYY-MM-DD
-  completed: boolean;
-};
-
-export type Habit = {
+export interface Habit {
   id: string;
-  name: string;
+  userId: string;
+  title: string;
   description: string;
+  habitType: HabitType;
+  targetValue?: number;
+  unitOfMeasure?: string;
   icon: string;
-  color: string;
-  category: HabitCategory;
-  frequency: string; // e.g. "daily", "3 times a week"
-  records: HabitRecord[];
-  currentStreak: number;
-  longestStreak: number;
+  emoji?: string;
+  themeColorHex: string;
+  minDailyValue?: number;
+  maxDailyValue?: number;
+  reminderTime?: string;
   createdAt: string;
-};
+  updatedAt: string;
+  archived: boolean;
+}
+
+export interface HabitLog {
+  id: string;
+  habitId: string;
+  userId: string;
+  logDate: string; // YYYY-MM-DD
+  value: string;
+  notes?: string;
+  imageUrl?: string;
+  loggedAt: string;
+  updatedAt: string;
+}
 
 export type UserPreferences = {
   theme: 'dark' | 'light';

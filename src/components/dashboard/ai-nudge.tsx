@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { Habit } from '@/lib/types';
 import { habitNudgeSuggestion, HabitNudgeSuggestionOutput } from '@/ai/flows/habit-nudge-suggestion';
 import { Sparkles, Loader2, Info } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card } from '@/components/ui/card';
 
 interface AINudgeProps {
@@ -21,11 +20,11 @@ export function AINudge({ habit, userGoals }: AINudgeProps) {
       setLoading(true);
       try {
         const result = await habitNudgeSuggestion({
-          habitName: habit.name,
-          completionHistory: habit.records.map(r => ({ date: r.date, completed: r.completed })),
-          currentStreak: habit.currentStreak,
-          longestStreak: habit.longestStreak,
-          targetFrequency: habit.frequency,
+          habitName: habit.title,
+          completionHistory: [], // Real history would be passed here
+          currentStreak: 0,
+          longestStreak: 0,
+          targetFrequency: 'daily',
           userGoals: userGoals,
         });
         setNudge(result);
@@ -37,13 +36,13 @@ export function AINudge({ habit, userGoals }: AINudgeProps) {
     }
 
     if (habit) fetchNudge();
-  }, [habit, userGoals]);
+  }, [habit.id, userGoals]);
 
   if (loading) {
     return (
       <Card className="p-4 glass-card flex items-center justify-center gap-3 animate-pulse">
-        <Loader2 className="animate-spin text-primary" />
-        <span className="text-sm font-medium">IronZen AI is analyzing your discipline...</span>
+        <Loader2 className="animate-spin text-primary" size={16} />
+        <span className="text-[10px] font-bold uppercase tracking-widest">Analyzing discipline...</span>
       </Card>
     );
   }
